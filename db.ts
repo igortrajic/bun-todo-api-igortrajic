@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 
-function setupDatabase(): Database {
+export function setupDatabase(): Database {
   const dbPath = process.env.DB_PATH || "mydb.sqlite";
   try {
     const db = new Database(dbPath, { create: true });
