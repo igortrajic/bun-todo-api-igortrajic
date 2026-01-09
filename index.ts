@@ -6,10 +6,15 @@ const server = Bun.serve({
   routes: {
     "/": index,
     "/todos": {
-        GET: () => {
-      const todos = db.query("SELECT * FROM todos").all();
-      return Response.json(todos);
-    }
+      GET: () => {
+        try {
+              const todos = db.query("SELECT * FROM todos").all();
+              return Response.json(todos);
+            } catch (error) {
+                console.error("Failed to fetch todos:", error);
+                return new Response("Failed to fetch todos", { status: 500 });
+            }
+        }
     }
   },
 
