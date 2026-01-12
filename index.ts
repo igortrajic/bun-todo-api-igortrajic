@@ -21,6 +21,10 @@ const updateTodoSchema = v.intersect([
   })
 ]);
 
+const deleteTodoSchema = v.object({
+  id: v.number()
+})
+
 const server = Bun.serve({
   port: 3000,
   routes: {
@@ -102,6 +106,35 @@ const server = Bun.serve({
               { status: 400 }
             );
           }
+
+          console.error(err);
+          return Response.json(
+            { success: false, error: "Server error" },
+            { status: 500 }
+          );
+        }
+      },
+      DELETE: async (req) => {
+        try {
+          const body = await req.json();
+          const {id} = v.parse(deleteTodoSchema, body);
+
+            const info = db.query(
+            `DELETE FROM todos WHERE id = ?`).run(id);
+            if (info.changes === 0) {
+              return Response.json(
+                { success: false, error: "Todo not found" }, 
+                { status: 404 }
+              );
+            }
+          return new Response(null, { status: 204 });
+        }  catch (err) {
+            if (err instanceof v.ValiError) {
+              return Response.json(
+                { success: false, error: "Invalid ID", issues: err.issues },
+                { status: 400 }
+              );
+            }
 
           console.error(err);
           return Response.json(
