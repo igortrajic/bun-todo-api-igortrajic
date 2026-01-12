@@ -119,8 +119,7 @@ const server = Bun.serve({
           const body = await req.json();
           const {id} = v.parse(deleteTodoSchema, body);
 
-            const info = db.query(
-            `DELETE FROM todos WHERE id = ?`).run(id);
+            const info = db.query(`DELETE FROM todos WHERE id = ?`).run(id);
             if (info.changes === 0) {
               return Response.json(
                 { success: false, error: "Todo not found" }, 
@@ -128,7 +127,7 @@ const server = Bun.serve({
               );
             }
           return new Response(null, { status: 204 });
-        }  catch (err) {
+        } catch (err) {
             if (err instanceof v.ValiError) {
               return Response.json(
                 { success: false, error: "Invalid ID", issues: err.issues },
