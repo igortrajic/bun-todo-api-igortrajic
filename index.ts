@@ -13,19 +13,13 @@ const todoSchema = v.object({
   date: v.optional(v.pipe(v.string(), v.isoDate()))
 });
 
-const updateTodoSchema = v.object({
-  title: v.optional(
-  v.pipe(
-    v.string(),
-    v.transform(s => s.trim()),
-    v.minLength(1, "Title is required")
-  ),
-),
-  content: v.optional(v.string()),
-  date: v.optional(v.pipe(v.string(), v.isoDate())),
-  done: v.optional(v.boolean()),
-  id: v.number() 
-});
+const updateTodoSchema = v.intersect([
+  v.partial(todoSchema),
+  v.object({
+    done: v.optional(v.boolean()),
+    id: v.number(),
+  })
+]);
 
 const server = Bun.serve({
   port: 3000,
@@ -79,7 +73,13 @@ const server = Bun.serve({
           const todo = v.parse(updateTodoSchema, body);
 
           const info = db.query(
-            "UPDATE todos set title = COALESCE(?,title),content = COALESCE(?,content), due_date = COALESCE(?,due_date), done = COALESCE(?,done) WHERE id = ?"
+            `UPDATE todos
+            SET
+              title = COALESCE(?, title),
+              content = COALESCE(?, content),
+              due_date = COALESCE(?, due_date),
+              done = COALESCE(?, done)
+            WHERE id = ?`
           ).run(
             todo.title ?? null,
             todo.content ?? null,
@@ -87,13 +87,14 @@ const server = Bun.serve({
             todo.done === undefined ? null : (todo.done ? 1 : 0),
             todo.id
           );
-          if (info.changes === 0) {
+                    if (info.changes === 0) {
             return Response.json(
               { success: false, error: "Todo not found" }, 
               { status: 404 }
             );
           }
-          return Response.json({ success: true, todo }, { status: 200 });
+          const updatedTodo = db.query("SELECT * FROM todos WHERE id = ?").get(todo.id);
+          return Response.json({ success: true, todo: updatedTodo }, { status: 200 });
         } catch (err) {
           if (err instanceof v.ValiError) {
             return Response.json(
