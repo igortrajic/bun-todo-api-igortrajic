@@ -1,4 +1,8 @@
 import db from '../db';
+import * as v from 'valibot';
+import { todoSchema,updateBodySchema } from '../schemas/todo.schema';
+export type Todo = v.InferOutput<typeof todoSchema>;
+export type UpdateTodo = v.InferOutput<typeof updateBodySchema>;
 
 export const TodoService = {
   getOne: (id: number) => {
@@ -9,30 +13,28 @@ export const TodoService = {
     return db.query("SELECT * FROM todos").all();
   },
 
-  create: (todo: any) => {
-    const info = db.query(
-      "INSERT INTO todos (title, content, due_date) VALUES (?, ?, ?)"
-    ).run(todo.title, todo.content ?? null, todo.due_date ?? null);
-    
-    return { ...todo, id: info.lastInsertRowid, done: false };
+  create: (todo: Todo) => {
+    return db.query(
+      "INSERT INTO todos (title, content, due_date) VALUES (?, ?, ?) RETURNING *"
+    ).get(todo.title, todo.content ?? null, todo.due_date ?? null);
   },
 
-  update: (id: number, changes: any) => {
-    db.query(
+  update: (id: number, changes: UpdateTodo) => {
+    return db.query(
       `UPDATE todos SET
         title = COALESCE(?, title),
         content = COALESCE(?, content),
         due_date = COALESCE(?, due_date),
         done = COALESCE(?, done)
-      WHERE id = ?`
-    ).run(
+      WHERE id = ?
+      RETURNING *`
+    ).get(
       changes.title ?? null,
       changes.content ?? null,
       changes.due_date ?? null,
       changes.done === undefined ? null : (changes.done ? 1 : 0),
       id
     );
-    return db.query("SELECT * FROM todos WHERE id = ?").get(id);
   },
 
   delete: (id: number | null) => {

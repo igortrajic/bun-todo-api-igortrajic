@@ -53,9 +53,9 @@ const server = Bun.serve({
           const body = await req.json();
           const changes = v.parse(updateBodySchema, body);
           const updated = TodoService.update(id, changes);
-          return Response.json([updated], { status: 200, headers });
+          return Response.json([updated], { status: 200, headers });   
         } catch (err) {
-          return new Response("Server Error", { status: 500, headers });
+          return Response.json({ error: "Invalid Input" }, { status: 400, headers });
         }
       }
 
